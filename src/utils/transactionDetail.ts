@@ -1,0 +1,205 @@
+import type { ReceiptRecord, Sale, WithholdingRecord } from '@/types';
+import type { ReceiptData } from '@/types/receipt';
+import type { TransactionDetail } from '@/types/transactionDetail';
+
+export function saleToTransactionDetail(sale: Sale): TransactionDetail {
+  return {
+    recordId: sale.id,
+    invoiceNumber: sale.invoiceNumber,
+    createdAt: sale.createdAt,
+    customerName: sale.customerName,
+    invoiceType: sale.invoiceType,
+    status: sale.status,
+    eirmsStatus: sale.eirmsStatus,
+    irn: sale.irn,
+    invoiceUuid: sale.invoiceUuid,
+    posOrderUuid: sale.posOrderUuid,
+    orderNumber: sale.orderNumber,
+    transactionType: sale.transactionType,
+    sellerTin: sale.sellerTin,
+    buyerTin: sale.buyerTin,
+    eirmsDocumentNumber: sale.eirmsDocumentNumber,
+    eirmsAckDate: sale.eirmsAckDate,
+    items: sale.items.map((item) => ({
+      key: item.lineId ?? item.productId ?? item.sku ?? item.productName,
+      lineId: item.lineId,
+      productId: item.productId,
+      name: item.productName,
+      sku: item.sku,
+      uom: item.uom,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      total: item.total,
+      discount: item.discount,
+      tax: item.tax,
+      excise: item.excise,
+      taxCode: item.taxCode,
+    })),
+    subtotal: sale.subtotal,
+    discount: sale.discount,
+    taxValue: sale.taxValue,
+    paidAmount: sale.paidAmount,
+    total: sale.total,
+    taxes: sale.taxes,
+    exciseTotal: sale.exciseTotal,
+    vatTotal: sale.vatTotal,
+    paymentMethod: String(sale.paymentMethod),
+    receivedAmount: sale.receivedAmount,
+    changeAmount: sale.changeAmount,
+  };
+}
+
+export function receiptRecordToTransactionDetail(receipt: ReceiptRecord): TransactionDetail {
+  const collectedAmount = receipt.collectedAmount ?? receipt.amount;
+  const customer = receipt.invoice?.customer;
+  const customerName = customer?.name ?? receipt.clientName;
+
+  return {
+    recordId: receipt.id,
+    invoiceNumber: receipt.number,
+    createdAt: receipt.createdAt,
+    customerName,
+    invoiceType: receipt.type ?? 'Receipt',
+    status: receipt.status,
+    eirmsStatus: receipt.eirmsStatus,
+    rrn: receipt.rrn,
+    items: [],
+    subtotal: collectedAmount,
+    discount: receipt.invoice?.salesOrderDiscountAmount ?? 0,
+    taxValue: receipt.invoice?.salesOrderTaxAmount ?? 0,
+    paidAmount: collectedAmount,
+    total: collectedAmount,
+    taxes: [],
+    paymentMethod: receipt.modeOfPayment ?? '',
+    exciseTotal: receipt.invoice?.salesOrderExciseAmount,
+    receipt: {
+      receiptUuid: receipt.receiptUuid,
+      invoiceUuid: receipt.invoiceUuid,
+      reason: receipt.reason,
+      receiptCounter: receipt.receiptCounter,
+      paymentCoverage: receipt.paymentCoverage,
+      modeOfPayment: receipt.modeOfPayment,
+      collectorName: receipt.collectorName,
+      eirmsIrn: receipt.eirmsIrn,
+      eirmsRrn: receipt.rrn,
+      eirmsDocumentNumber: receipt.eirmsDocumentNumber,
+      eirmsAckDate: receipt.eirmsAckDate,
+      eimsErrorMessage: receipt.eimsErrorMessage,
+      qrBase64: receipt.qrBase64,
+      updatedAt: receipt.updatedAt,
+      invoiceNumber: receipt.invoice?.invoiceNumber,
+      invoiceStatus: receipt.invoice?.status,
+      invoiceTotal: receipt.invoice?.totalValue,
+      invoicePaidAmount: receipt.invoice?.paidAmount,
+      invoiceWithheldAmount: receipt.invoice?.withheldAmount,
+      invoiceEirmsIrn: receipt.invoice?.eirmsIrn,
+      invoiceEirmsAckDate: receipt.invoice?.eirmsAckDate,
+      orderNumber: receipt.invoice?.orderNumber,
+      salesOrderStatus: receipt.invoice?.salesOrderStatus,
+      currency: receipt.invoice?.currency,
+      salesOrderSubtotal: receipt.invoice?.salesOrderSubtotal,
+      salesOrderTaxAmount: receipt.invoice?.salesOrderTaxAmount,
+      salesOrderExciseAmount: receipt.invoice?.salesOrderExciseAmount,
+      salesOrderDiscountAmount: receipt.invoice?.salesOrderDiscountAmount,
+      salesOrderTotal: receipt.invoice?.salesOrderTotal,
+      salesOrderModeOfPayment: receipt.invoice?.modeOfPayment,
+      customerName: customer?.name,
+      customerEmail: customer?.email,
+      customerPhone: customer?.phone,
+      customerTaxId: customer?.taxId,
+      customerVatNumber: customer?.vatNumber,
+      customerTransactionType: customer?.transactionType,
+      customerCity: customer?.city,
+      customerCountry: customer?.country,
+      customerRegion: customer?.region,
+      customerZone: customer?.zone,
+      customerWereda: customer?.wereda,
+      customerKebele: customer?.kebele,
+      customerStreet: customer?.street,
+      customerHouseNumber: customer?.houseNumber,
+      customerSubCity: customer?.subCity,
+      collectedAmount,
+    },
+  };
+}
+
+export function withholdingRecordToTransactionDetail(
+  record: WithholdingRecord
+): TransactionDetail {
+  const withholdingAmount = record.withholdingAmount ?? record.amount;
+  const preTaxAmount = record.preTaxAmount ?? 0;
+
+  return {
+    recordId: record.id,
+    invoiceNumber: record.number,
+    createdAt: record.createdAt,
+    customerName: record.clientName,
+    invoiceType: 'Withholding',
+    status: record.status,
+    eirmsStatus: record.eirmsStatus,
+    irn: record.rrn ? undefined : record.irn,
+    rrn: record.rrn,
+    items: [],
+    subtotal: preTaxAmount,
+    discount: 0,
+    taxValue: withholdingAmount,
+    paidAmount: withholdingAmount,
+    total: withholdingAmount,
+    taxes: [],
+    paymentMethod: '',
+    withholding: {
+      reason: record.reason,
+      receiptCounter: record.receiptCounter,
+      manualReceiptNumber: record.manualReceiptNumber,
+      sourceSystemType: record.sourceSystemType,
+      sourceSystemNumber: record.sourceSystemNumber,
+      invoiceIrn: record.invoiceIrn,
+      currency: record.currency,
+      exchangeRate: record.exchangeRate,
+      withholdType: record.withholdType,
+      withholdRate: record.withholdRate,
+      withholdingCategory: record.withholdingCategory,
+      preTaxAmount: record.preTaxAmount,
+      withholdingAmount: record.withholdingAmount,
+      organizationName: record.organizationName,
+      qrBase64: record.qrBase64,
+      supplierName: record.supplier?.name ?? record.clientName,
+      supplierEmail: record.supplier?.email,
+      supplierPhone: record.supplier?.phone,
+      supplierTaxId: record.supplier?.taxId,
+      supplierTransactionType: record.supplier?.transactionType,
+      supplierAddress: record.supplier?.address,
+      updatedAt: record.updatedAt,
+    },
+  };
+}
+
+export function receiptToTransactionDetail(receipt: ReceiptData): TransactionDetail {
+  const otherTaxAmount =
+    receipt.otherTaxAmount ??
+    Math.max(0, (receipt.taxAmount ?? 0) - (receipt.vatAmount ?? 0));
+
+  return {
+    invoiceNumber: receipt.invoiceNumber,
+    createdAt: receipt.createdAt,
+    irn: receipt.irn,
+    items: receipt.items.map((item) => ({
+      key: item.product_id,
+      name: item.product.name,
+      variantName: item.product.variantName,
+      quantity: item.quantity,
+      unitPrice: item.product.sellingPrice,
+      total: item.product.sellingPrice * item.quantity,
+    })),
+    subtotal: receipt.subtotal,
+    discount: receipt.discount,
+    taxValue: otherTaxAmount,
+    vatTotal: receipt.vatAmount,
+    paidAmount: receipt.total,
+    total: receipt.total,
+    taxes: [],
+    paymentMethod: receipt.paymentMethod,
+    receivedAmount: receipt.receivedAmount,
+    changeAmount: receipt.changeAmount,
+  };
+}
